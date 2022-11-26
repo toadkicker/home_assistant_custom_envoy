@@ -107,14 +107,14 @@ SENSORS = (
     ),
     SensorEntityDescription(
         key="grid_import",
-        name="Grid Energy Imported Counter",
+        name="Grid Energy Imported Total",
         native_unit_of_measurement=ENERGY_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="grid_export",
-        name="Grid Energy Exported Counter",
+        name="Grid Energy Exported Total",
         native_unit_of_measurement=ENERGY_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
