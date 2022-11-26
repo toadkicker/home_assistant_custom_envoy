@@ -34,10 +34,10 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> EnvoyRead
         enlighten_user=data[CONF_USERNAME],
         enlighten_pass=data[CONF_PASSWORD],
         inverters=False,
-#        async_client=get_async_client(hass),
+        #        async_client=get_async_client(hass),
         use_enlighten_owner_token=data.get(CONF_USE_ENLIGHTEN, False),
         enlighten_serial_num=data[CONF_SERIAL],
-        https_flag='s' if data.get(CONF_USE_ENLIGHTEN,False) else ''
+        https_flag='s' if data.get(CONF_USE_ENLIGHTEN, False) else ''
     )
 
     try:
@@ -89,7 +89,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
     async def async_step_zeroconf(
-        self, discovery_info: zeroconf.ZeroconfServiceInfo
+            self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> FlowResult:
         """Handle a flow initialized by zeroconf discovery."""
         serial = discovery_info.properties["serialnum"]
@@ -98,9 +98,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured({CONF_HOST: self.ip_address})
         for entry in self._async_current_entries(include_ignore=False):
             if (
-                entry.unique_id is None
-                and CONF_HOST in entry.data
-                and entry.data[CONF_HOST] == self.ip_address
+                    entry.unique_id is None
+                    and CONF_HOST in entry.data
+                    and entry.data[CONF_HOST] == self.ip_address
             ):
                 title = f"{ENVOY} {serial}" if entry.title == ENVOY else ENVOY
                 self.hass.config_entries.async_update_entry(
@@ -137,15 +137,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return False
 
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
+            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
         errors = {}
 
         if user_input is not None:
             if (
-                not self._reauth_entry
-                and user_input[CONF_HOST] in self._async_current_hosts()
+                    not self._reauth_entry
+                    and user_input[CONF_HOST] in self._async_current_hosts()
             ):
                 return self.async_abort(reason="already_configured")
             try:
@@ -169,7 +169,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_abort(reason="reauth_successful")
 
                 if not self.unique_id and await self._async_set_unique_id_from_envoy(
-                    envoy_reader
+                        envoy_reader
                 ):
                     data[CONF_NAME] = self._async_envoy_name()
 
