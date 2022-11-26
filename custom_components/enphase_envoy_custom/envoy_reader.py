@@ -3,12 +3,12 @@ import argparse
 import asyncio
 import datetime
 import logging
-import jwt
 import re
 import time
 from json.decoder import JSONDecodeError
 
 import httpx
+import jwt
 from bs4 import BeautifulSoup
 from envoy_utils.envoy_utils import EnvoyUtils
 
@@ -82,21 +82,25 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         "Grid status not available for your Envoy device."
     )
 
+    message_grid_import_false = (
+        "Your system is producing more than being consumed and returning electricity back to the grid."
+    )
+
     def __init__(  # pylint: disable=too-many-arguments
-        self,
-        host,
-        username="envoy",
-        password="",
-        inverters=False,
-        async_client=None,
-        enlighten_user=None,
-        enlighten_pass=None,
-        commissioned=False,
-        enlighten_site_id=None,
-        enlighten_serial_num=None,
-        https_flag="",
-        use_enlighten_owner_token=False,
-        token_refresh_buffer_seconds=0
+            self,
+            host,
+            username="envoy",
+            password="",
+            inverters=False,
+            async_client=None,
+            enlighten_user=None,
+            enlighten_pass=None,
+            commissioned=False,
+            enlighten_site_id=None,
+            enlighten_serial_num=None,
+            https_flag="",
+            use_enlighten_owner_token=False,
+            token_refresh_buffer_seconds=0
     ):
         """Init the EnvoyReader."""
         self.host = host.lower()
@@ -137,7 +141,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         if self.endpoint_type == ENVOY_MODEL_S:
             await self._update_from_pc_endpoint()
         if self.endpoint_type == ENVOY_MODEL_C or (
-            self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
+                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             await self._update_from_p_endpoint()
         if self.endpoint_type == ENVOY_MODEL_LEGACY:
@@ -192,8 +196,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                     if resp.status_code == 401 and attempt < 2:
                         _LOGGER.debug(
                             "Received 401 from Envoy; refreshing token, attempt %s of 2",
-                            attempt+1,
-                            )
+                            attempt + 1,
+                        )
                         could_refresh_cookies = await self._refresh_token_cookies()
                         if not could_refresh_cookies:
                             await self._getEnphaseToken()
@@ -218,7 +222,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         except httpx.TransportError:  # pylint: disable=try-except-raise
             raise
 
-    async def _fetch_owner_token_json(self) :
+    async def _fetch_owner_token_json(self):
         """
         Try to fetch the owner token json from Enlighten API
         :return:
@@ -237,7 +241,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 'user[email]': self.enlighten_user,
                 'user[password]': self.enlighten_pass,
             }
-            resp = await client.post(ENLIGHTEN_AUTH_FORM_URL+form_action, data=payload_login, timeout=10)
+            resp = await client.post(ENLIGHTEN_AUTH_FORM_URL + form_action, data=payload_login, timeout=10)
             if resp.status_code >= 400:
                 raise Exception("Could not Authenticate via Enlighten auth form")
 
@@ -250,7 +254,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             return resp_json
 
     async def _getEnphaseToken(  # pylint: disable=invalid-name
-        self,
+            self,
     ):
         payload_login = {
             "username": self.enlighten_user,
@@ -261,7 +265,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             token_json = await self._fetch_owner_token_json()
 
             self._token = token_json["token"]
-            time_left_days = (token_json["expires_at"] - time.time())/(24*3600)
+            time_left_days = (token_json["expires_at"] - time.time()) / (24 * 3600)
             _LOGGER.debug("Commissioned Token valid for %s days", time_left_days)
 
         elif self.commissioned == "True" or self.commissioned == "Commissioned":
@@ -312,14 +316,13 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         # Parse the HTML return from Envoy and check the text
         soup = BeautifulSoup(token_validation_html.text, features="html.parser")
         token_validation = soup.find("h2").contents[0]
-        if self._is_enphase_token_valid(token_validation) :
+        if self._is_enphase_token_valid(token_validation):
             # set the cookies for future clients
             self._cookies = token_validation_html.cookies
             return True
 
         # token not valid if we get here
         return False
-
 
     def _is_enphase_token_valid(self, response):
         if response == "Valid token.":
@@ -415,8 +418,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         # If self.endpoint_production_json_results.status_code is set with
         # 401 then we will give an error
         if (
-            self.endpoint_production_json_results
-            and self.endpoint_production_json_results.status_code == 401
+                self.endpoint_production_json_results
+                and self.endpoint_production_json_results.status_code == 401
         ):
             raise RuntimeError(
                 "Could not connect to Envoy model. "
@@ -425,11 +428,11 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             )
 
         if (
-            self.endpoint_production_json_results
-            and self.endpoint_production_json_results.status_code == 200
-            and has_production_and_consumption(
-                self.endpoint_production_json_results.json()
-            )
+                self.endpoint_production_json_results
+                and self.endpoint_production_json_results.status_code == 200
+                and has_production_and_consumption(
+            self.endpoint_production_json_results.json()
+        )
         ):
             self.isMeteringEnabled = has_metering_setup(
                 self.endpoint_production_json_results.json()
@@ -444,8 +447,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         except httpx.HTTPError:
             pass
         if (
-            self.endpoint_production_v1_results
-            and self.endpoint_production_v1_results.status_code == 200
+                self.endpoint_production_v1_results
+                and self.endpoint_production_v1_results.status_code == 200
         ):
             self.endpoint_type = ENVOY_MODEL_C  # Envoy-C, production only
             return
@@ -455,8 +458,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         except httpx.HTTPError:
             pass
         if (
-            self.endpoint_production_results
-            and self.endpoint_production_results.status_code == 200
+                self.endpoint_production_results
+                and self.endpoint_production_results.status_code == 200
         ):
             self.endpoint_type = ENVOY_MODEL_LEGACY  # older Envoy-C
             return
@@ -495,20 +498,20 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     def create_connect_errormessage(self):
         """Create error message if unable to connect to Envoy"""
         return (
-            "Unable to connect to Envoy. "
-            + "Check that the device is up at 'http://"
-            + self.host
-            + "'."
+                "Unable to connect to Envoy. "
+                + "Check that the device is up at 'http://"
+                + self.host
+                + "'."
         )
 
     def create_json_errormessage(self):
         """Create error message if unable to parse JSON response"""
         return (
-            "Got a response from '"
-            + self.host
-            + "', but metric could not be found. "
-            + "Maybe your model of Envoy doesn't "
-            + "support the requested metric."
+                "Got a response from '"
+                + self.host
+                + "', but metric could not be found. "
+                + "Maybe your model of Envoy doesn't "
+                + "support the requested metric."
         )
 
     async def production(self):
@@ -543,8 +546,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         """Only return data if Envoy supports Consumption"""
         if (
-            self.endpoint_type in ENVOY_MODEL_C
-            or self.endpoint_type in ENVOY_MODEL_LEGACY
+                self.endpoint_type in ENVOY_MODEL_C
+                or self.endpoint_type in ENVOY_MODEL_LEGACY
         ):
             return self.message_consumption_not_available
 
@@ -560,7 +563,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             raw_json = self.endpoint_production_json_results.json()
             daily_production = raw_json["production"][1]["whToday"]
         elif self.endpoint_type == ENVOY_MODEL_C or (
-            self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
+                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
             daily_production = raw_json["wattHoursToday"]
@@ -587,8 +590,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         """Only return data if Envoy supports Consumption"""
         if (
-            self.endpoint_type in ENVOY_MODEL_C
-            or self.endpoint_type in ENVOY_MODEL_LEGACY
+                self.endpoint_type in ENVOY_MODEL_C
+                or self.endpoint_type in ENVOY_MODEL_LEGACY
         ):
             return self.message_consumption_not_available
 
@@ -604,7 +607,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             raw_json = self.endpoint_production_json_results.json()
             seven_days_production = raw_json["production"][1]["whLastSevenDays"]
         elif self.endpoint_type == ENVOY_MODEL_C or (
-            self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
+                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
             seven_days_production = raw_json["wattHoursSevenDays"]
@@ -631,8 +634,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         """Only return data if Envoy supports Consumption"""
         if (
-            self.endpoint_type in ENVOY_MODEL_C
-            or self.endpoint_type in ENVOY_MODEL_LEGACY
+                self.endpoint_type in ENVOY_MODEL_C
+                or self.endpoint_type in ENVOY_MODEL_LEGACY
         ):
             return self.message_consumption_not_available
 
@@ -648,7 +651,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             raw_json = self.endpoint_production_json_results.json()
             lifetime_production = raw_json["production"][1]["whLifetime"]
         elif self.endpoint_type == ENVOY_MODEL_C or (
-            self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
+                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
             lifetime_production = raw_json["wattHoursLifetime"]
@@ -675,8 +678,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         """Only return data if Envoy supports Consumption"""
         if (
-            self.endpoint_type in ENVOY_MODEL_C
-            or self.endpoint_type in ENVOY_MODEL_LEGACY
+                self.endpoint_type in ENVOY_MODEL_C
+                or self.endpoint_type in ENVOY_MODEL_LEGACY
         ):
             return self.message_consumption_not_available
 
@@ -709,8 +712,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     async def battery_storage(self):
         """Return battery data from Envoys that support and have batteries installed"""
         if (
-            self.endpoint_type in ENVOY_MODEL_LEGACY
-            or self.endpoint_type in ENVOY_MODEL_C
+                self.endpoint_type in ENVOY_MODEL_LEGACY
+                or self.endpoint_type in ENVOY_MODEL_C
         ):
             return self.message_battery_not_available
 
@@ -741,6 +744,14 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 return home_json["enpower"]["grid_status"]
 
         return self.message_grid_status_not_available
+
+    async def grid_import(self):
+        if self.grid_status == "closed":
+            return self.message_grid_import_false
+        return self.consumption() - self.production()
+
+    async def grid_export(self):
+        return self.lifetime_production() - self.lifetime_consumption()
 
     def run_in_console(self):
         """If running this module directly, print all the values in the console."""
@@ -828,9 +839,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if (
-        args.enlighten_user is not None
-        and args.enlighten_pass is not None
-        and args.commissioned is not None
+            args.enlighten_user is not None
+            and args.enlighten_pass is not None
+            and args.commissioned is not None
     ):
         SECURE = "s"
 
