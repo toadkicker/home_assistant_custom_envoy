@@ -98,7 +98,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             commissioned=False,
             enlighten_site_id=None,
             enlighten_serial_num=None,
-            https_flag="",
+            https_flag="s",
             use_enlighten_owner_token=False,
             token_refresh_buffer_seconds=0
     ):
@@ -431,8 +431,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_production_json_results
                 and self.endpoint_production_json_results.status_code == 200
                 and has_production_and_consumption(
-            self.endpoint_production_json_results.json()
-        )
+                    self.endpoint_production_json_results.json()
+                )
         ):
             self.isMeteringEnabled = has_metering_setup(
                 self.endpoint_production_json_results.json()
@@ -466,7 +466,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         raise RuntimeError(
             "Could not connect or determine Envoy model. "
-            + "Check that the device is up at 'http://"
+            + "Check that the device is up at http"
+            + self.https_flag + "://"
             + self.host
             + "'."
         )
@@ -646,10 +647,11 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     async def lifetime_production(self):
         """Running getData() beforehand will set self.enpoint_type and self.isDataRetrieved"""
         """so that this method will only read data from stored variables"""
+        lifetime_production = 0
 
         if self.endpoint_type == ENVOY_MODEL_S and self.isMeteringEnabled:
             raw_json = self.endpoint_production_json_results.json()
-            lifetime_production = raw_json["production"][1]["whLifetime"]
+            lifetime_production = raw_json["production"][1]["wattHoursLifetime"]
         elif self.endpoint_type == ENVOY_MODEL_C or (
                 self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
@@ -672,7 +674,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 )
         return int(lifetime_production)
 
-    async def lifetime_consumption(self):
+    async def lifetime_consumption(self) -> int:
         """Running getData() beforehand will set self.enpoint_type and self.isDataRetrieved"""
         """so that this method will only read data from stored variables"""
 
@@ -681,7 +683,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_type in ENVOY_MODEL_C
                 or self.endpoint_type in ENVOY_MODEL_LEGACY
         ):
-            return self.message_consumption_not_available
+            raise RuntimeError(self.message_consumption_not_available)
 
         raw_json = self.endpoint_production_json_results.json()
         lifetime_consumption = raw_json["consumption"][0]["whLifetime"]
@@ -836,29 +838,42 @@ if __name__ == "__main__":
         dest="enlighten_serial_num",
         help="Enlighten Envoy Serial Number. Only used when Commissioned=True.",
     )
+    parser.add_argument(
+        "-n",
+        "--host",
+        dest="host",
+        help="Local IP for Enphase Envoy.",
+    )
     args = parser.parse_args()
 
     if (
             args.enlighten_user is not None
             and args.enlighten_pass is not None
-            and args.commissioned is not None
     ):
         SECURE = "s"
+    if args.host is None or args.host == "":
+        HOST = input(
+            "Enter the Envoy IP address or host name, "
+            + "or press enter to use 'envoy' as default: "
+        )
+    else:
+        HOST = args.host
 
-    HOST = input(
-        "Enter the Envoy IP address or host name, "
-        + "or press enter to use 'envoy' as default: "
-    )
+    if args.enlighten_user is None or args.enlighten_user == "":
+        USERNAME = input(
+            "Enter the Username for Inverter data authentication, "
+            + "or press enter to use 'envoy' as default: "
+        )
+    else:
+        USERNAME = args.enlighten_user
 
-    USERNAME = input(
-        "Enter the Username for Inverter data authentication, "
-        + "or press enter to use 'envoy' as default: "
-    )
-
-    PASSWORD = input(
-        "Enter the Password for Inverter data authentication, "
-        + "or press enter to use the default password: "
-    )
+    if args.enlighten_pass is None or args.enlighten_pass == "":
+        PASSWORD = input(
+            "Enter the Password for Inverter data authentication, "
+            + "or press enter to use the default password: "
+        )
+    else:
+        PASSWORD = args.enlighten_pass
 
     if HOST == "":
         HOST = "envoy"
