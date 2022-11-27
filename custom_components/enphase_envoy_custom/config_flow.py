@@ -5,10 +5,8 @@ import contextlib
 import logging
 from typing import Any
 
-from .envoy_reader import EnvoyReader
 import httpx
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PASSWORD, CONF_USERNAME
@@ -17,6 +15,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN, CONF_SERIAL, CONF_USE_ENLIGHTEN
+from .envoy_reader import EnvoyReader
 
 _LOGGER = logging.getLogger(__name__)
 logging.getLogger("envoy_reader.envoy_reader").setLevel(logging.DEBUG)

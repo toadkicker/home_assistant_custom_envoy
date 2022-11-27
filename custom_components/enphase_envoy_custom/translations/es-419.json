@@ -1,5 +1,5 @@
 {
-    "config": {
-        "flow_title": "{serial} ({host})"
-    }
+  "config": {
+    "flow_title": "{serial} ({host})"
+  }
 }

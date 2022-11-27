@@ -427,8 +427,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_production_json_results
                 and self.endpoint_production_json_results.status_code == 200
                 and has_production_and_consumption(
-                    self.endpoint_production_json_results.json()
-                )
+            self.endpoint_production_json_results.json()
+        )
         ):
             self.isMeteringEnabled = has_metering_setup(
                 self.endpoint_production_json_results.json()
