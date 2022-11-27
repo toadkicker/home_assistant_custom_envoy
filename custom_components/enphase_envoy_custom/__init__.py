@@ -32,8 +32,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     envoy_reader = EnvoyReader(
         config[CONF_HOST],
-        username=config[CONF_USERNAME],
-        password=config[CONF_PASSWORD],
         enlighten_user=config[CONF_USERNAME],
         enlighten_pass=config[CONF_PASSWORD],
         inverters=True,

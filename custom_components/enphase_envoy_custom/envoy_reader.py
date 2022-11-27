@@ -89,8 +89,6 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
             self,
             host,
-            username="envoy",
-            password="",
             inverters=False,
             async_client=None,
             enlighten_user=None,
@@ -104,8 +102,6 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     ):
         """Init the EnvoyReader."""
         self.host = host.lower()
-        self.username = username
-        self.password = password
         self.get_inverters = inverters
         self.endpoint_type = None
         self.serial_number_last_six = None
@@ -386,7 +382,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         inverters_url = ENDPOINT_URL_PRODUCTION_INVERTERS.format(
             self.https_flag, self.host
         )
-        inverters_auth = httpx.DigestAuth(self.username, self.password)
+        inverters_auth = httpx.DigestAuth(self.enlighten_user, self.enlighten_pass)
 
         response = await self._async_fetch_with_retry(
             inverters_url, auth=inverters_auth
@@ -407,7 +403,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         # If a password was not given as an argument when instantiating
         # the EnvoyReader object than use the last six numbers of the serial
         # number as the password.  Otherwise use the password argument value.
-        if self.password == "" and not self.serial_number_last_six:
+        if self.enlighten_pass == "" and not self.serial_number_last_six:
             await self.get_serial_number()
 
         try:
@@ -476,11 +472,11 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         """Method to get last six digits of Envoy serial number for auth"""
         full_serial = await self.get_full_serial_number()
         if full_serial:
-            gen_passwd = EnvoyUtils.get_password(full_serial, self.username)
-            if self.username == "envoy" or self.username != "installer":
-                self.password = self.serial_number_last_six = full_serial[-6:]
+            gen_passwd = EnvoyUtils.get_password(full_serial, self.enlighten_user)
+            if self.enlighten_user == "envoy" or self.enlighten_user != "installer":
+                self.enlighten_pass = self.serial_number_last_six = full_serial[-6:]
             else:
-                self.password = gen_passwd
+                self.enlighten_pass = gen_passwd
 
     async def get_full_serial_number(self):
         """Method to get the  Envoy serial number."""
@@ -802,8 +798,6 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
 
 if __name__ == "__main__":
-    SECURE = ""
-
     parser = argparse.ArgumentParser(
         description="Retrieve energy information from the Enphase Envoy device."
     )
@@ -875,37 +869,28 @@ if __name__ == "__main__":
     else:
         PASSWORD = args.enlighten_pass
 
-    if HOST == "":
-        HOST = "envoy"
-
-    if USERNAME == "":
-        USERNAME = "envoy"
-
     if PASSWORD == "":
         TESTREADER = EnvoyReader(
             HOST,
-            USERNAME,
             inverters=True,
             enlighten_user=args.enlighten_user,
             enlighten_pass=args.enlighten_pass,
             commissioned=args.commissioned,
             enlighten_site_id=args.enlighten_site_id,
             enlighten_serial_num=args.enlighten_serial_num,
-            https_flag=SECURE,
+            https_flag='s',
             use_enlighten_owner_token=args.ownertoken
         )
     else:
         TESTREADER = EnvoyReader(
             HOST,
-            USERNAME,
-            PASSWORD,
             inverters=True,
             enlighten_user=args.enlighten_user,
             enlighten_pass=args.enlighten_pass,
             commissioned=args.commissioned,
             enlighten_site_id=args.enlighten_site_id,
             enlighten_serial_num=args.enlighten_serial_num,
-            https_flag=SECURE,
+            https_flag='s',
             use_enlighten_owner_token=args.ownertoken
         )
 
