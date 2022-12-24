@@ -772,7 +772,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.lifetime_consumption(),
                 self.inverters_production(),
                 self.battery_storage(),
-                return_exceptions=False,
+                return_exceptions=True,
             )
         )
 
@@ -809,7 +809,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c",
-        "--comissioned",
+        "--commissioned",
         dest="commissioned",
         help="Commissioned Envoy (True/False)",
     )
