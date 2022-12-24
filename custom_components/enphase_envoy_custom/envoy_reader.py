@@ -649,7 +649,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
-            lifetime_production = raw_json["whLifetime"]
+            _LOGGER.debug("%s", raw_json)
+            lifetime_production = raw_json["wattHoursLifetime"]
         elif self.endpoint_type == ENVOY_MODEL_LEGACY:
             text = self.endpoint_production_results.text
             match = re.search(LIFE_PRODUCTION_REGEX, text, re.MULTILINE)
