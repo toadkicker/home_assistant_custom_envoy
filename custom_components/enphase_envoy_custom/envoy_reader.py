@@ -414,8 +414,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         # If self.endpoint_production_json_results.status_code is set with
         # 401 then we will give an error
         if (
-                self.endpoint_production_json_results
-                and self.endpoint_production_json_results.status_code == 401
+            self.endpoint_production_json_results
+            and self.endpoint_production_json_results.status_code == 401
         ):
             raise RuntimeError(
                 "Could not connect to Envoy model. "
@@ -423,50 +423,46 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 + "Please enter in the needed Enlighten credentials during setup."
             )
 
-        if (
-                self.endpoint_production_json_results
-                and self.endpoint_production_json_results.status_code == 200
-                and has_production_and_consumption(
+        if (not self.endpoint_production_json_results or not (
+            self.endpoint_production_json_results.status_code == 200) or not has_production_and_consumption(
+            self.endpoint_production_json_results.json()
+        )):
+            try:
+                await self._update_from_p_endpoint()
+            except httpx.HTTPError:
+                pass
+            if (
+                    self.endpoint_production_v1_results
+                    and self.endpoint_production_v1_results.status_code == 200
+            ):
+                self.endpoint_type = ENVOY_MODEL_C  # Envoy-C, production only
+                return
+
+            try:
+                await self._update_from_p0_endpoint()
+            except httpx.HTTPError:
+                pass
+            if (
+                    self.endpoint_production_results
+                    and self.endpoint_production_results.status_code == 200
+            ):
+                self.endpoint_type = ENVOY_MODEL_LEGACY  # older Envoy-C
+                return
+
+            raise RuntimeError(
+                "Could not connect or determine Envoy model. "
+                + "Check that the device is up at http"
+                + self.https_flag + "://"
+                + self.host
+                + "'."
+            )
+
+        self.isMeteringEnabled = has_metering_setup(
             self.endpoint_production_json_results.json()
         )
-        ):
-            self.isMeteringEnabled = has_metering_setup(
-                self.endpoint_production_json_results.json()
-            )
-            if not self.isMeteringEnabled:
-                await self._update_from_p_endpoint()
-            self.endpoint_type = ENVOY_MODEL_S
-            return
-
-        try:
+        if not self.isMeteringEnabled:
             await self._update_from_p_endpoint()
-        except httpx.HTTPError:
-            pass
-        if (
-                self.endpoint_production_v1_results
-                and self.endpoint_production_v1_results.status_code == 200
-        ):
-            self.endpoint_type = ENVOY_MODEL_C  # Envoy-C, production only
-            return
-
-        try:
-            await self._update_from_p0_endpoint()
-        except httpx.HTTPError:
-            pass
-        if (
-                self.endpoint_production_results
-                and self.endpoint_production_results.status_code == 200
-        ):
-            self.endpoint_type = ENVOY_MODEL_LEGACY  # older Envoy-C
-            return
-
-        raise RuntimeError(
-            "Could not connect or determine Envoy model. "
-            + "Check that the device is up at http"
-            + self.https_flag + "://"
-            + self.host
-            + "'."
-        )
+        self.endpoint_type = ENVOY_MODEL_S
 
     async def get_serial_number(self):
         """Method to get last six digits of Envoy serial number for auth"""
@@ -607,7 +603,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
-            seven_days_production = raw_json["production"][1]["whLastSevenDays"]
+            _LOGGER.debug("%s", raw_json)
+            seven_days_production = raw_json["wattHoursSevenDays"]
         elif self.endpoint_type == ENVOY_MODEL_LEGACY:
             text = self.endpoint_production_results.text
             match = re.search(WEEK_PRODUCTION_REGEX, text, re.MULTILINE)
