@@ -595,31 +595,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     async def seven_days_production(self):
         """Running getData() beforehand will set self.enpoint_type and self.isDataRetrieved"""
         """so that this method will only read data from stored variables"""
-
-        if self.endpoint_type == ENVOY_MODEL_S and self.isMeteringEnabled:
-            raw_json = self.endpoint_production_json_results.json()
-            seven_days_production = raw_json["production"][1]["whLastSevenDays"]
-        elif self.endpoint_type == ENVOY_MODEL_C or (
-                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
-        ):
-            raw_json = self.endpoint_production_v1_results.json()
-            _LOGGER.debug("%s", raw_json)
-            seven_days_production = raw_json["wattHoursSevenDays"]
-        elif self.endpoint_type == ENVOY_MODEL_LEGACY:
-            text = self.endpoint_production_results.text
-            match = re.search(WEEK_PRODUCTION_REGEX, text, re.MULTILINE)
-            if match:
-                if match.group(2) == "kWh":
-                    seven_days_production = float(match.group(1)) * 1000
-                else:
-                    if match.group(2) == "MWh":
-                        seven_days_production = float(match.group(1)) * 1000000
-                    else:
-                        seven_days_production = float(match.group(1))
-            else:
-                raise RuntimeError(
-                    "No match for 7 Day production, " "check REGEX " + text
-                )
+        raw_json = self.endpoint_production_json_results.json()
+        seven_days_production = raw_json["production"][1]["whLastSevenDays"]
         return int(seven_days_production)
 
     async def seven_days_consumption(self):
@@ -640,32 +617,8 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
     async def lifetime_production(self):
         """Running getData() beforehand will set self.enpoint_type and self.isDataRetrieved"""
         """so that this method will only read data from stored variables"""
-        lifetime_production = 0
-
-        if self.endpoint_type == ENVOY_MODEL_S and self.isMeteringEnabled:
-            raw_json = self.endpoint_production_json_results.json()
-            lifetime_production = raw_json["production"][1]["whLifetime"]
-        elif self.endpoint_type == ENVOY_MODEL_C or (
-                self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
-        ):
-            raw_json = self.endpoint_production_v1_results.json()
-            _LOGGER.debug("%s", raw_json)
-            lifetime_production = raw_json["wattHoursLifetime"]
-        elif self.endpoint_type == ENVOY_MODEL_LEGACY:
-            text = self.endpoint_production_results.text
-            match = re.search(LIFE_PRODUCTION_REGEX, text, re.MULTILINE)
-            if match:
-                if match.group(2) == "kWh":
-                    lifetime_production = float(match.group(1)) * 1000
-                else:
-                    if match.group(2) == "MWh":
-                        lifetime_production = float(match.group(1)) * 1000000
-                    else:
-                        lifetime_production = float(match.group(1))
-            else:
-                raise RuntimeError(
-                    "No match for Lifetime production, " "check REGEX " + text
-                )
+        raw_json = self.endpoint_production_json_results.json()
+        lifetime_production = raw_json["production"][1]["whLifetime"]
         return int(lifetime_production)
 
     async def lifetime_consumption(self) -> int:
