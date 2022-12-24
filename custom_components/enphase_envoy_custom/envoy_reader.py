@@ -607,7 +607,7 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
-            seven_days_production = raw_json["wattHoursSevenDays"]
+            seven_days_production = raw_json["whLastSevenDays"]
         elif self.endpoint_type == ENVOY_MODEL_LEGACY:
             text = self.endpoint_production_results.text
             match = re.search(WEEK_PRODUCTION_REGEX, text, re.MULTILINE)
@@ -647,12 +647,12 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
 
         if self.endpoint_type == ENVOY_MODEL_S and self.isMeteringEnabled:
             raw_json = self.endpoint_production_json_results.json()
-            lifetime_production = raw_json["production"][1]["wattHoursLifetime"]
+            lifetime_production = raw_json["production"][1]["whLifetime"]
         elif self.endpoint_type == ENVOY_MODEL_C or (
                 self.endpoint_type == ENVOY_MODEL_S and not self.isMeteringEnabled
         ):
             raw_json = self.endpoint_production_v1_results.json()
-            lifetime_production = raw_json["wattHoursLifetime"]
+            lifetime_production = raw_json["whLifetime"]
         elif self.endpoint_type == ENVOY_MODEL_LEGACY:
             text = self.endpoint_production_results.text
             match = re.search(LIFE_PRODUCTION_REGEX, text, re.MULTILINE)
