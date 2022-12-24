@@ -1,20 +1,21 @@
 """The Enphase Envoy integration."""
 from __future__ import annotations
 
-import logging
 from datetime import timedelta
+import logging
 
 import async_timeout
+from .envoy_reader import EnvoyReader
 import httpx
+from numpy import isin
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import COORDINATOR, DOMAIN, NAME, PLATFORMS, SENSORS, CONF_USE_ENLIGHTEN, CONF_SERIAL
-from .envoy_reader import EnvoyReader
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
@@ -29,13 +30,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     envoy_reader = EnvoyReader(
         config[CONF_HOST],
+        username=config[CONF_USERNAME],
+        password=config[CONF_PASSWORD],
         enlighten_user=config[CONF_USERNAME],
         enlighten_pass=config[CONF_PASSWORD],
         inverters=True,
-        async_client=get_async_client(hass),
-        use_enlighten_owner_token=config.get(CONF_USE_ENLIGHTEN, True),
+#        async_client=get_async_client(hass),
+        use_enlighten_owner_token=config.get(CONF_USE_ENLIGHTEN, False),
         enlighten_serial_num=config[CONF_SERIAL],
-        https_flag='' if config.get(CONF_USE_ENLIGHTEN, False) else 's'
+        https_flag='s' if config.get(CONF_USE_ENLIGHTEN, False) else ''
     )
 
     async def async_update_data():
@@ -64,12 +67,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
                         data[description.key] = battery_dict
 
-                elif description.key not in ["current_battery_capacity", "total_battery_percentage"]:
+                elif (description.key not in ["current_battery_capacity", "total_battery_percentage", "grid_import", "grid_export"]):
                     data[description.key] = await getattr(
                         envoy_reader, description.key
                     )()
 
             data["grid_status"] = await envoy_reader.grid_status()
+            
+            if "lifetime_consumption" in data and "lifetime_production" in data:
+                LEC_state = hass.states.get( "sensor.envoy_" + config[CONF_SERIAL] + "_lifetime_energy_consumption" )
+                LEP_state = hass.states.get( "sensor.envoy_" + config[CONF_SERIAL] + "_lifetime_energy_production" )
+                TGEI_state = hass.states.get( "sensor.envoy_" + config[CONF_SERIAL] + "_total_grid_energy_imported" )
+                TGEE_state = hass.states.get( "sensor.envoy_" + config[CONF_SERIAL] + "_total_grid_energy_exported" )
+
+                if LEC_state and str(LEC_state.state).isnumeric() and LEP_state and str(LEP_state.state).isnumeric():
+                    LEC_delta = data["lifetime_consumption"] - int(LEC_state.state)
+                    LEP_delta = data["lifetime_production"] - int(LEP_state.state)
+                    data["grid_import"] = 0
+                    data["grid_export"] = 0
+
+                    if LEC_delta < data["lifetime_consumption"] and TGEI_state and str(TGEI_state.state).isnumeric():
+                        data["grid_import"] = max(LEC_delta - LEP_delta, 0) + int(TGEI_state.state)
+
+                    if LEP_delta < data["lifetime_production"] and TGEE_state and str(TGEE_state.state).isnumeric():
+                        data["grid_export"] = max(LEP_delta - LEC_delta, 0) + int(TGEE_state.state)
 
             _LOGGER.debug("Retrieved data from API: %s", data)
 
